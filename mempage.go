@@ -36,14 +36,14 @@ type Page struct {
 }
 
 type PageFilter struct {
-	Key    string    `json:"key" example:"name"` // filter key. is field json tag name. eg: name. for embedded struct field, split with "." eg：user.house.name
-	Op     Operation `json:"op" example:"like"`  // like、eq、is null、not null、>、>=、<、<=、?=、!?=
+	Key    string    `json:"key" example:"name"` // filter key. is field json tag name. eg: name. for embedded struct field, split with "." eg：house.name
+	Op     Operation `json:"op" example:"like"`  // Like/Eq/Ne/In/NotIn/IsNull/NotNull
 	Values []string  `json:"values" example:""`  // values
 }
 
 type PageSort struct {
-	Key       string `json:"key" example:"name"`      // sort key. is field json tag name. eg: name. for embedded struct field, split with "." eg：user.house.name
-	Ascending bool   `json:"asceding" example:"true"` // asc. if false means desc.
+	Key       string `json:"key" example:"name"`      // sort key. is field json tag name. eg: name. for embedded struct field, split with "." eg：house.name
+	Ascending bool   `json:"asceding" example:"true"` // asc. if "false" means desc.
 }
 
 func (p *Page) Len() int { return len(p.mGenericData) }
@@ -99,7 +99,7 @@ func (p *Page) paginate() *Page {
 	return p
 }
 
-func (p *Page) GetmGenericData() []interface{} {
+func (p *Page) GetMGenericData() []interface{} {
 	return p.mGenericData
 }
 
