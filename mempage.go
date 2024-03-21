@@ -14,9 +14,9 @@ import (
 type Operation string
 
 const (
-	Like    Operation = "like" //模糊查詢
-	Eq      Operation = "eq"   //精確匹配
-	Ne      Operation = "ne"
+	Like    Operation = "like" //contains
+	Eq      Operation = "eq"   //equal
+	Ne      Operation = "ne"   // not equal
 	In      Operation = "in"
 	NotIn   Operation = "not in"
 	IsNull  Operation = "is null"
@@ -26,24 +26,24 @@ const (
 var defaultPageSize = 10
 
 type Page struct {
-	Page         int          `json:"page" example:"1"`      //当前页
-	PageSize     int          `json:"pageSize" example:"10"` //每页数量
-	Filters      []PageFilter `json:"filters"`               //过滤
-	Sorts        []PageSort   `json:"sorts"`                 //排序
-	Result       interface{}  `json:"result"`                //分页数据
-	TotalCount   int          `json:"totalCount"`            //总条数
+	Page         int          `json:"page"`       //current page number
+	PageSize     int          `json:"pageSize"`   //pageSize
+	Filters      []PageFilter `json:"filters"`    //filters
+	Sorts        []PageSort   `json:"sorts"`      //sorts
+	Result       interface{}  `json:"result"`     //final result is here
+	TotalCount   int          `json:"totalCount"` //total data count (include data not in current page)
 	mGenericData []interface{}
 }
 
 type PageFilter struct {
-	Key    string    `json:"key" example:"name"` //过滤项(json tag)，深度过滤用.隔开：cpu.total
-	Op     Operation `json:"op" example:"like"`  //操作類型 like、eq、is null、not null、>、>=、<、<=、?=、!?=
-	Values []string  `json:"values" example:""`  //过滤值
+	Key    string    `json:"key" example:"name"` // filter key. is field json tag name. eg: name. for embedded struct field, split with "." eg：user.house.name
+	Op     Operation `json:"op" example:"like"`  // like、eq、is null、not null、>、>=、<、<=、?=、!?=
+	Values []string  `json:"values" example:""`  // values
 }
 
 type PageSort struct {
-	Key       string `json:"key" example:"name"`      //排序项，深度排序用.隔开：cpu.total
-	Ascending bool   `json:"asceding" example:"true"` //是否升序
+	Key       string `json:"key" example:"name"`      // sort key. is field json tag name. eg: name. for embedded struct field, split with "." eg：user.house.name
+	Ascending bool   `json:"asceding" example:"true"` // asc. if false means desc.
 }
 
 func (p *Page) Len() int { return len(p.mGenericData) }
@@ -144,10 +144,6 @@ func (p *Page) compare(objA, objB interface{}) int {
 		timeB := objB.(time.Time)
 
 		return p.int64Compare(timeA.Unix(), timeB.Unix())
-		//} else if typeA == reflect.TypeOf(&timestamp.Timestamp{}) { //proto buf timestamp compare
-		//	timestampA := objA.(*timestamp.Timestamp)
-		//	timestampB := objp.(*timestamp.Timestamp)
-		//	return p.timestampCompare(timestampA, timestampB)
 	}
 	return 0
 }
@@ -196,21 +192,6 @@ func (p *Page) float32Compare(x, y float32) int {
 	return -1
 }
 
-//func (p *Page) timestampCompare(a, b *timestamp.Timestamp) int {
-//	if a == nil || b == nil {
-//		return -1
-//	}
-//
-//	aTime, _ := ptypes.Timestamp(a)
-//	bTime, _ := ptypes.Timestamp(b)
-//	if aTime.After(bTime) {
-//		return 1
-//	} else if aTime.Equal(bTime) {
-//		return 0
-//	}
-//	return -1
-//}
-
 func (p *Page) match(obj interface{}) bool {
 	for _, f := range p.Filters {
 		val := p.getProperty(obj, f.Key)
@@ -235,10 +216,6 @@ func (p *Page) match(obj interface{}) bool {
 			if reflect.TypeOf(val).Kind() == reflect.String {
 				str = reflect.ValueOf(val).String()
 			}
-			/*str, ok := val.(string)
-			if !ok {
-				return false
-			}*/
 			switch f.Op {
 			case IsNull:
 				return str == ""
@@ -251,6 +228,15 @@ func (p *Page) match(obj interface{}) bool {
 						break
 					}
 				}
+			case Ne:
+				flag := false
+				for _, v := range f.Values {
+					if str == v {
+						flag = true
+						break
+					}
+				}
+				matched = !flag
 			case In:
 				for _, v := range f.Values {
 					vs := strings.Split(v, ",")
@@ -272,11 +258,7 @@ func (p *Page) match(obj interface{}) bool {
 						}
 					}
 				}
-				if flag {
-					matched = false
-				} else {
-					matched = true
-				}
+				matched = !flag
 			default:
 				for _, v := range f.Values {
 					if strings.Contains(str, v) {

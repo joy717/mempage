@@ -44,6 +44,20 @@ if we want to sort by CreateTime, then the value of `key` is `createTime`.
 
 if we want to filter by Name, then the value of `key` is `my_name`.
 
+for embedded strut, we can use `.` to separate the field name.
+
+for example, we have a complex struct like this:
+```
+type User struct {
+  Id   int64 `json:"id"`
+  Home Home `json:"home"`
+}
+type Home struct {
+    Name string `json:"name"`
+}
+```
+if we want to filter by Home.Name, then the value of `key` is `home.name`.
+
 
 ## Filter op(options):
 - Like    Operation = "like"
