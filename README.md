@@ -74,8 +74,9 @@ type User struct {
 }
 
 func main() {
-	// filter data by name, which name like %user%
-	// sort by createTime desc.  sorts[0].asceding = false means desc.
+	// filter data by name, which name contains "user"
+	// sort by createTime desc.  
+	// sorts[0].asceding = false means desc.
 	pageReqStr := `
 {
   "filters": [
